@@ -1,5 +1,6 @@
 package com.digitalpurr.safenote;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
@@ -10,17 +11,18 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import android.widget.Toast;
 
 public class ContentsFragment extends Fragment {
+    private String data;
+
     public ContentsFragment() {
         // Required empty public constructor
+    }
+
+    public ContentsFragment setData(String data) {
+        this.data = data;
+        return this;
     }
 
     @Override
@@ -33,57 +35,35 @@ public class ContentsFragment extends Fragment {
                              Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_contents, container, false);
         final EditText editText = view.findViewById(R.id.content_text);
-        try {
-            editText.setText(readFromFile(getActivity()), TextView.BufferType.NORMAL);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        editText.setText(data, TextView.BufferType.NORMAL);
+        data = null;
         Button button = view.findViewById(R.id.save_button);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d("SafeNote", "ON SAVE");
-                try {
-                    writeToFile(editText.getText().toString(), getActivity());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+        button.setOnClickListener((v) -> {
+            Log.d("SafeNote", "ON SAVE");
+            button.setText("WRITING");
+            button.setEnabled(false);
+            onSave(getActivity(), editText.getText().toString(), button);
         });
-
         return view;
     }
 
-    private static void writeToFile(final String data, final Context context) throws Exception {
-        try {
-            String filePath = context.getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
-            FileOutputStream f = new FileOutputStream(new File(filePath));
-            f.write(Encryption.encodeFile(data.getBytes()));
-            f.flush();
-            f.close();
-        }
-        catch (IOException e) {
-            Log.e("SafeNote", "File write failed: " + e.toString());
-        }
-    }
-
-    private static String readFromFile(final Context context) throws Exception {
-        String ret = "";
-        try {
-            String filePath = context.getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
-            File file = new File(filePath);
-            byte[] fileData = new byte[(int) file.length()];
-            DataInputStream dis = new DataInputStream(new FileInputStream(file));
-            dis.readFully(fileData);
-            dis.close();
-            ret = new String(Encryption.decodeFile(fileData), "UTF-8");
-        }
-        catch (FileNotFoundException e) {
-            Log.e("SafeNote", "File not found: " + e.toString());
-        } catch (IOException e) {
-            Log.e("SafeNote", "Can not read file: " + e.toString());
-        }
-        return ret;
+    private void onSave(final Activity activity, final String data, final Button button) {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Encryption.writeToFile(data, activity);
+                } catch (Exception e) {
+                    activity.runOnUiThread(() -> Toast.makeText(activity,"ERROR: "+e.getLocalizedMessage(), Toast.LENGTH_SHORT).show());
+                    e.printStackTrace();
+                }
+                activity.runOnUiThread(() -> {
+                    Toast.makeText(activity,"DONE", Toast.LENGTH_SHORT).show();
+                    button.setText("SAVE");
+                    button.setEnabled(true);
+                });
+            }
+        }.start();
     }
 
     @Override

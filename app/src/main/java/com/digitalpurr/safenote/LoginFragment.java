@@ -1,5 +1,6 @@
 package com.digitalpurr.safenote;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
@@ -32,17 +33,11 @@ public class LoginFragment extends Fragment {
             button.setText("CREATE");
         }
 
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d("SafeNote", "ON LOGIN");
-                try {
-                    Encryption.generateKey(passwordField.getText().toString());
-                    MainActivity.INSTANCE.replaceFragment(R.id.content, new ContentsFragment(), Consts.TAG_CONTENTS_FRAGMENT);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+        button.setOnClickListener((v) -> {
+            Log.d("SafeNote", "ON LOGIN");
+            button.setEnabled(false);
+            button.setText("OPENING...");
+            openSafeNote(getActivity(), passwordField, button);
         });
 
         return view;
@@ -56,5 +51,24 @@ public class LoginFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
+    }
+
+    private void openSafeNote(final Activity activity, final EditText passwordField, final Button button) {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Encryption.generateKey(passwordField.getText().toString());
+                    final ContentsFragment contentsFragment = new ContentsFragment().setData(Encryption.readFromFile(activity));
+                    activity.runOnUiThread(() -> MainActivity.INSTANCE.replaceFragment(R.id.content, contentsFragment, Consts.TAG_CONTENTS_FRAGMENT));
+                } catch (Exception e) {
+                    activity.runOnUiThread(() -> {
+                        button.setEnabled(true);
+                        button.setText("OPEN");
+                    });
+                    e.printStackTrace();
+                }
+            }
+        }.start();
     }
 }
