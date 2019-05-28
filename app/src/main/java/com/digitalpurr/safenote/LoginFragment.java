@@ -8,11 +8,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+
+import java.io.File;
 
 public class LoginFragment extends Fragment {
-    public LoginFragment() {
-        // Required empty public constructor
-    }
+    public LoginFragment() { }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -22,13 +23,25 @@ public class LoginFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_login, container, false);
-        Button button = view.findViewById(R.id.login_button);
+        final View view = inflater.inflate(R.layout.fragment_login, container, false);
+        final EditText passwordField = view.findViewById(R.id.login_password);
+        final Button button = view.findViewById(R.id.login_button);
+
+        File file = new File(Consts.CONTAINER_FILE);
+        if(!file.exists()) {
+            button.setText("CREATE");
+        }
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d("SafeNote", "ON LOGIN");
-                MainActivity.INSTANCE.replaceFragment(R.id.content, new ContentsFragment(), MainActivity.TAG_CONTENTS_FRAGMENT);
+                try {
+                    Encryption.generateKey(passwordField.getText().toString());
+                    MainActivity.INSTANCE.replaceFragment(R.id.content, new ContentsFragment(), Consts.TAG_CONTENTS_FRAGMENT);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
 

@@ -11,13 +11,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.util.stream.Collectors;
 
 public class ContentsFragment extends Fragment {
     public ContentsFragment() {
@@ -34,39 +33,50 @@ public class ContentsFragment extends Fragment {
                              Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_contents, container, false);
         final EditText editText = view.findViewById(R.id.content_text);
-        editText.setText(readFromFile(getActivity()), TextView.BufferType.NORMAL);
+        try {
+            editText.setText(readFromFile(getActivity()), TextView.BufferType.NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         Button button = view.findViewById(R.id.save_button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d("SafeNote", "ON SAVE");
-                writeToFile(editText.getText().toString(), getActivity());
+                try {
+                    writeToFile(editText.getText().toString(), getActivity());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
 
         return view;
     }
 
-    private static void writeToFile(final String data, final Context context) {
+    private static void writeToFile(final String data, final Context context) throws Exception {
         try {
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(context.openFileOutput("data.txt", Context.MODE_PRIVATE));
-            outputStreamWriter.write(data);
-            outputStreamWriter.close();
+            String filePath = context.getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
+            FileOutputStream f = new FileOutputStream(new File(filePath));
+            f.write(Encryption.encodeFile(data.getBytes()));
+            f.flush();
+            f.close();
         }
         catch (IOException e) {
             Log.e("SafeNote", "File write failed: " + e.toString());
         }
     }
 
-    private static String readFromFile(final Context context) {
+    private static String readFromFile(final Context context) throws Exception {
         String ret = "";
         try {
-            InputStream inputStream = context.openFileInput("data.txt");
-            if ( inputStream != null ) {
-                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-                ret = bufferedReader.lines().collect(Collectors.joining("\n"));
-            }
+            String filePath = context.getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
+            File file = new File(filePath);
+            byte[] fileData = new byte[(int) file.length()];
+            DataInputStream dis = new DataInputStream(new FileInputStream(file));
+            dis.readFully(fileData);
+            dis.close();
+            ret = new String(Encryption.decodeFile(fileData), "UTF-8");
         }
         catch (FileNotFoundException e) {
             Log.e("SafeNote", "File not found: " + e.toString());

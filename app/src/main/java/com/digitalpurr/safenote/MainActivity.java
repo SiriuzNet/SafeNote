@@ -2,16 +2,11 @@ package com.digitalpurr.safenote;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.os.Bundle;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.os.Bundle;
 
 public class MainActivity extends Activity {
-
-    public final static String MAIN_BACKSTACK = "MAIN_BACKSTACK";
-    public final static String TAG_LOGIN_FRAGMENT = "TAG_LOGIN_FRAGMENT";
-    public final static String TAG_CONTENTS_FRAGMENT = "TAG_CONTENTS_FRAGMENT";
     public static MainActivity INSTANCE;
 
     @Override
@@ -20,7 +15,7 @@ public class MainActivity extends Activity {
         INSTANCE = this;
         setContentView(R.layout.activity_main);
 
-        addFragment(R.id.content, new LoginFragment(), TAG_LOGIN_FRAGMENT);
+        addFragment(R.id.content, new LoginFragment(), Consts.TAG_LOGIN_FRAGMENT);
     }
 
     public void addFragment(@IdRes int containerViewId,
@@ -41,7 +36,7 @@ public class MainActivity extends Activity {
                 .beginTransaction()
                 .replace(containerViewId, fragment, fragmentTag)
                 //.addToBackStack(backStackStateName)
-                .addToBackStack(MAIN_BACKSTACK)
+                .addToBackStack(Consts.MAIN_BACKSTACK)
                 .commit();
     }
 }
