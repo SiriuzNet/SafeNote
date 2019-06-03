@@ -15,6 +15,10 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -61,6 +65,13 @@ public class ContentsFragment extends Fragment {
             intentShareFile.putExtra(Intent.EXTRA_TEXT, "EXPORT TIME: "+sdf.format(new Date()));
             startActivity(Intent.createChooser(intentShareFile, "Export"));
         });
+        Button importButton = view.findViewById(R.id.import_button);
+        importButton.setOnClickListener((v) -> {
+            Intent intent = new Intent()
+                    .setType("application/octet-stream")
+                    .setAction(Intent.ACTION_GET_CONTENT);
+            startActivityForResult(Intent.createChooser(intent, "Select a file"), 123);
+        });
         return view;
     }
 
@@ -81,6 +92,27 @@ public class ContentsFragment extends Fragment {
                 });
             }
         }.start();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == 123 && resultCode == Activity.RESULT_OK) {
+            try {
+                final FileInputStream in = (FileInputStream) getContext().getContentResolver().openInputStream(data.getData());
+                final String filePath = getContext().getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
+                FileOutputStream out = new FileOutputStream(new File(filePath));
+                FileChannel inChannel = in.getChannel();
+                FileChannel outChannel = out.getChannel();
+                inChannel.transferTo(0, inChannel.size(), outChannel);
+                in.close();
+                out.close();
+                getActivity().onBackPressed();
+            } catch (Exception e) {
+                getActivity().runOnUiThread(() -> Toast.makeText(getActivity(),"ERROR: "+e.getLocalizedMessage(), Toast.LENGTH_SHORT).show());
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
