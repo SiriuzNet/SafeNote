@@ -98,20 +98,25 @@ public class ContentsFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == 123 && resultCode == Activity.RESULT_OK) {
-            try {
-                final FileInputStream in = (FileInputStream) getContext().getContentResolver().openInputStream(data.getData());
-                final String filePath = getContext().getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
-                FileOutputStream out = new FileOutputStream(new File(filePath));
-                FileChannel inChannel = in.getChannel();
-                FileChannel outChannel = out.getChannel();
-                inChannel.transferTo(0, inChannel.size(), outChannel);
-                in.close();
-                out.close();
-                getActivity().onBackPressed();
-            } catch (Exception e) {
-                getActivity().runOnUiThread(() -> Toast.makeText(getActivity(),"ERROR: "+e.getLocalizedMessage(), Toast.LENGTH_SHORT).show());
-                e.printStackTrace();
-            }
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        final FileInputStream in = (FileInputStream) getContext().getContentResolver().openInputStream(data.getData());
+                        final String filePath = getContext().getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
+                        FileOutputStream out = new FileOutputStream(new File(filePath));
+                        FileChannel inChannel = in.getChannel();
+                        FileChannel outChannel = out.getChannel();
+                        inChannel.transferTo(0, inChannel.size(), outChannel);
+                        in.close();
+                        out.close();
+                        getActivity().runOnUiThread(() -> getActivity().onBackPressed());
+                    } catch (Exception e) {
+                        getActivity().runOnUiThread(() -> Toast.makeText(getActivity(),"ERROR: "+e.getLocalizedMessage(), Toast.LENGTH_SHORT).show());
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
         }
     }
 
