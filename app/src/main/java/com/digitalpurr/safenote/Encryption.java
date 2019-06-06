@@ -3,6 +3,9 @@ package com.digitalpurr.safenote;
 import android.content.Context;
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,6 +27,8 @@ public class Encryption {
 
     private final static int KEY_LENGTH = 256;
     private final static int ITERATIONS = 1000;
+
+    private final static Gson GSON = (new GsonBuilder()).enableComplexMapKeySerialization().create();
 
     public static void generateKey(final String password) throws Exception {
         final byte[] salt = "catfurry".getBytes();
@@ -50,9 +55,11 @@ public class Encryption {
 
     public static void writeToFile(final String data, final Context context) throws Exception {
         try {
+            Content content = new Content();
+            content.plainText = data;
             final String filePath = context.getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
             FileOutputStream f = new FileOutputStream(new File(filePath));
-            f.write(Encryption.encodeFile(data.getBytes()));
+            f.write(Encryption.encodeFile(GSON.toJson(content).getBytes()));
             f.flush();
             f.close();
         }
@@ -61,8 +68,7 @@ public class Encryption {
         }
     }
 
-    public static String readFromFile(final Context context) throws Exception {
-        String ret = "";
+    public static Content readFromFile(final Context context) throws Exception {
         try {
             final String filePath = context.getFilesDir().getPath() + File.separator + Consts.CONTAINER_FILE;
             File file = new File(filePath);
@@ -70,13 +76,13 @@ public class Encryption {
             DataInputStream dis = new DataInputStream(new FileInputStream(file));
             dis.readFully(fileData);
             dis.close();
-            ret = new String(Encryption.decodeFile(fileData), "UTF-8");
+            return GSON.fromJson(new String(Encryption.decodeFile(fileData), "UTF-8"), Content.class);
         }
         catch (FileNotFoundException e) {
             Log.e("SafeNote", "File not found: " + e.toString());
         } catch (IOException e) {
             Log.e("SafeNote", "Can not read file: " + e.toString());
         }
-        return ret;
+        return new Content();
     }
 }
