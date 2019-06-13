@@ -59,7 +59,7 @@ public class LoginFragment extends Fragment {
             public void run() {
                 try {
                     Encryption.generateKey(passwordField.getText().toString());
-                    final ContentsFragment contentsFragment = new ContentsFragment().setData(Encryption.readFromFile(activity));
+                    final ContentsFragment contentsFragment = new ContentsFragment().setData(Encryption.readFromFile(activity).plainText);
                     activity.runOnUiThread(() -> MainActivity.INSTANCE.replaceFragment(R.id.content, contentsFragment, Consts.TAG_CONTENTS_FRAGMENT));
                 } catch (Exception e) {
                     activity.runOnUiThread(() -> {
